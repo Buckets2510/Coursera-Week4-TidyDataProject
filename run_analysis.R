@@ -9,10 +9,8 @@
 # Check and load required packages
 if (!require("dplyr")) {install.packages("dplyr")}
 if (!require("data.table")) {install.packages("data.table")}
-if (!require("gsubfn")) {install.packages("gsubfn")}
 library(dplyr)
 library(data.table)
-library(gsubfn)
 
 
 # Get data
@@ -31,59 +29,53 @@ activityLabels <- fread(file.path(wdpath, "UCI HAR Dataset/activity_labels.txt")
 features <- fread(file.path(wdpath, "UCI HAR Dataset/features.txt"),
                     col.names = c("featureID", "featureNames"))
 
-# Extract measurements on mean and standard deviation, and keep data in those columns
-columnsNeeded <- grep("(mean|std)\\(\\)", features[, featureNames])
-measurements <- features[columnsNeeded, featureNames]
-
-#substituting variables with more descriptive variables
-measurements <- gsubfn("(^t|^f|Acc|Gyro|Mag|BodyBody|\\(\\))",
-                       list("t" = "Time", "f" = "Frequency",
-                            "Acc" = "Accelerometer",
-                            "Gyro" = "Gyroscope",
-                            "Mag" = "Magnitude",
-                            "BodyBody" = "Body",
-                            "()" = ""),measurements)
-
 # Loading train and test data, binding each set separately
 
 trainSubjects <- fread(file.path(wdpath, "UCI HAR Dataset/train/subject_train.txt"),
                        col.names = "SubjectID")
-trainValues <- fread(file.path(wdpath, "UCI HAR Dataset/train/X_train.txt"))[, columnsNeeded, with = FALSE]
-setnames(trainValues, colnames(trainValues), measurements)
+trainValues <- fread(file.path(wdpath, "UCI HAR Dataset/train/X_train.txt"),
+                     col.names = features$featureNames)
 trainActivity <- fread(file.path(wdpath, "UCI HAR Dataset/train/y_train.txt"),
                        col.names = "Activity")
-
-trainSet <- cbind(trainActivity, trainSubjects, trainValues)
-
 testSubjects <- fread(file.path(wdpath, "UCI HAR Dataset/test/subject_test.txt"),
                       col.names = "SubjectID")
-testValues <- fread(file.path(wdpath, "UCI HAR Dataset/test/X_test.txt"))[, columnsNeeded, with = FALSE]
-setnames(testValues, colnames(testValues), measurements)
+testValues <- fread(file.path(wdpath, "UCI HAR Dataset/test/X_test.txt"),
+                    col.names = features$featureNames)
 testActivity <- fread(file.path(wdpath, "UCI HAR Dataset/test/y_test.txt"),
                       col.names = "Activity")
 
-testSet <- cbind(testActivity, testSubjects, testValues)
-
+XSet <- rbind(trainValues, testValues)
+ySet <- rbind(trainActivity, testActivity)
+subjectSet <- rbind(trainSubjects, testSubjects)
 
 # Merging the training and test sets to create one data set. Remove redundant data
 
-allActivity <- rbind(trainSet, testSet)
+allActivity <- cbind(subjectSet, ySet, XSet)
 
 rm(trainSubjects, trainValues, trainActivity, testSubjects, testValues, testActivity)
 
-# Use descriptive activity names to name the activities in the data set
-allActivity[["Activity"]] <- factor(allActivity[, Activity], levels = activityLabels[["ActivityID"]])
+# Extract measurements on mean and standard deviation, and keep data in those columns
+tidySet <- allActivity %>% select(SubjectID, Activity, contains("mean"), contains("std"))
 
-allActivity[["SubjectID"]] <- as.factor(allActivity[, SubjectID])
+# Use descriptive activity names to name the activities in the data set
+tidySet$Activity <- activityLabels[tidySet$Activity, 2]
+
+names(tidySet)[2] = "Activity"
+names(tidySet) <- gsub("Acc", "Accelerometer", names(tidySet))
+names(tidySet) <- gsub("Gyro", "Gyroscope", names(tidySet))
+names(tidySet) <- gsub("BodyBody", "Body", names(tidySet))
+names(tidySet) <- gsub("Mag", "Magnitude", names(tidySet))
+names(tidySet) <- gsub("^t", "Time", names(tidySet))
+names(tidySet) <- gsub("^f", "Frequency", names(tidySet))
+names(tidySet) <- gsub("()", "", names(tidySet))
 
 
 # Create a second independent tidy data set with the average of each variable
 # for each activity and each subject
-
-allActivityMeans <- allActivity %>% group_by(SubjectID, Activity) %>% 
+tidyMeans <- tidySet %>% group_by(SubjectID, Activity) %>% 
         summarise_all(funs(mean))
 
 
-fwrite(allActivityMeans, file = "tidy_data.txt")
+fwrite(tidyMeans, file = "tidy_data.txt")
 
 

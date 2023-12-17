@@ -43,13 +43,13 @@ A R script, called run_analysis.R does the following:
 Executing the work is as follows:
 1. Download of the required files to the working directory and read the files to the workspace with 'download.file' and 'fread'.
 
-2. Extract measurements based on mean and standard deviation from the features dataset. Adjust column names to more descriptive variabels using the 'gsubfn' function
+2. Load the remaining data from the training and test sets. Use 'fread' to read the files and 'col.names' to set column names for future merging and clean-up. Use 'rbind' and 'cbind' to combine the training and test sets separately.
 
-3. Load the remaining data from the training and test sets. Use 'fread' to read the files and 'col.names' to set column names for future merging and clean-up. Use 'cbind' to combine the training and test sets separately.
+3. Merge the datasets and remove the redundant tables to save memory.
 
-4. Merge the training and test datasets with 'rbind'. Remove the redundant tables to save memory.
+4. Extract measurements based on mean and standard deviation from the merged dataset. Adjust column names to more descriptive variables using 'names' and 'gsub' function.
 
-5. Use 'factor' and 'as.factor' functions to change the activity values with named factor levels in preparation for the tidy data set.
+5. Change the activity values in preparation for the tidy data set.
 
 6. Use 'group_by' and 'summarise_all' with mean to create the tidy data set of the average of each variable for each activity and subject .
 
