@@ -53,4 +53,11 @@ Executing the work is as follows:
 
 6. Use 'group_by' and 'summarise_all' with mean to create the tidy data set of the average of each variable for each activity and subject .
 
-
+## The variables changed from the original data set are as follows:
+- "t" = "Time"
+- "f" = "Frequency"
+- "Acc" = "Accelerometer"
+- "Gyro" = "Gyroscope"
+- "Mag" = "Magnitude"
+- "BodyBody" = "Body"
+- "()" = ""
